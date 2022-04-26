@@ -45,7 +45,7 @@ const Comment: FunctionComponent<Comment> = (props) => {
 
   const getComments = async () => {
     await axios
-      .get(`http://localhost:5000/api/products/${id}/getallcomments`,{params:{page:`${page}`}})
+      .get(`/api/products/${id}/getallcomments`,{params:{page:`${page}`}})
       .then((res) => {setComments(res.data.data);setTotal(res.data.total)});
   };
 
@@ -57,7 +57,7 @@ const Comment: FunctionComponent<Comment> = (props) => {
     e.preventDefault()
     await axios
       .post(
-        `http://localhost:5000/api/products/${product._id}/addcomment`,
+        `/api/products/${product._id}/addcomment`,
         { comment: cmt, rating: +rating / 20 },
         {
           withCredentials:true
