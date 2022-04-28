@@ -1,7 +1,8 @@
 import { ShoppingCartOutlined } from "@mui/icons-material";
 import { Autocomplete, Pagination, Stack, TextField } from "@mui/material";
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createSearchParams,
@@ -9,10 +10,12 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
-import Product from "../components/Product";
+import ErrorFallback from "../components/common/ErrorBoundary";
+// import Product from "../components/Product";
 import { setProducts } from "../redux/ActionCreators/ProductActionCreators";
 import { IRootState } from "../redux/Reducers/rootReducer";
 import { Cart } from "../type";
+const Product = React.lazy(() => import("../components/Product"));
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -43,29 +46,28 @@ const Home = () => {
   };
 
   useEffect(() => {
-
     const abortCont = new AbortController();
-
     setLoading(true);
     axios
       .get("/api/products", {
         params: { page: `${RouterPage}`, limit: 3 },
-        signal:abortCont.signal
+        signal: abortCont.signal,
       })
       .then((res) => {
         setLoading(false);
         setData(res.data.data);
         setTotal(res.data.total);
         dispatch(setProducts(res.data.data));
-      }).catch(err=>{
-        if(err.message === "canceled"){
-          console.log("axios aborted")
-        }else{
-          console.log(err)
+      })
+      .catch((err) => {
+        if (err.message === "canceled") {
+          console.log("axios aborted");
+        } else {
+          console.log(err);
         }
       });
 
-      return () => abortCont.abort()
+    return () => abortCont.abort();
   }, [RouterPage]);
 
   useEffect(() => {
@@ -77,13 +79,16 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    if(search === ""){
-      setFilteredData(data)
-    }else{
-      setFilteredData(allData?.filter(prdct=>prdct.title.toLowerCase().includes(search.toLowerCase())))
+    if (search === "") {
+      setFilteredData(data);
+    } else {
+      setFilteredData(
+        allData?.filter((prdct) =>
+          prdct.title.toLowerCase().includes(search.toLowerCase())
+        )
+      );
     }
-    
-  }, [search,data]);
+  }, [search, data]);
 
   if (cart[0]?._id !== 0) {
     const sumAll = cart
@@ -100,22 +105,18 @@ const Home = () => {
     setSearchParams(createSearchParams({ page: `${pageRef.current}` }));
   };
 
-  const handleChange = (
-    e: any
-  ) => {
-    if(!e.target.innerHTML.startsWith("<path")){
-      if(e.target.value === 0){
-        setSearch(e.target.innerHTML)
-      }else if(e.target.value === undefined){
-        setSearch("")
-      }else{
+  const handleChange = (e: any) => {
+    if (!e.target.innerHTML.startsWith("<path")) {
+      if (e.target.value === 0) {
+        setSearch(e.target.innerHTML);
+      } else if (e.target.value === undefined) {
+        setSearch("");
+      } else {
         setSearch(e.target.value);
       }
-      
-    }else{
-      setSearch("")
+    } else {
+      setSearch("");
     }
-    
   };
 
   return (
@@ -136,9 +137,13 @@ const Home = () => {
                   size="small"
                   freeSolo
                   options={allData.map((option) => option.title)}
-                  onChange={(e)=>handleChange(e)}
+                  onChange={(e) => handleChange(e)}
                   renderInput={(params) => (
-                    <TextField {...params} label="Search by title" color="warning"  />
+                    <TextField
+                      {...params}
+                      label="Search by title"
+                      color="warning"
+                    />
                   )}
                 />
               </Stack>
@@ -178,36 +183,50 @@ const Home = () => {
               {ref.current}
             </div>
           )}
-
-          <div
-            style={{
-              flexWrap: "wrap",
-              display: "flex",
-              justifyContent: "space-around",
-            }}
-          >
-            {filteredData?.map((item) => (
-              <Product item={item} key={item._id} />
-            ))}
-          </div>
-          {search==="" ? (<div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "1rem",
-            }}
-          >
-            <Stack spacing={2}>
-              <Pagination
-                sx={{ color: "red" }}
-                count={forik()}
-                page={!RouterPage ? pageRef.current : Number(RouterPage)}
-                onChange={handleAlignment}
-                defaultPage={1}
-                color="primary"
-              />
-            </Stack>
-          </div>) : null}
+          <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {}}>
+            <Suspense fallback={<div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "80vh",
+              }}
+            >
+              <ClimbingBoxLoader size={30} color="#c67c03" />
+            </div>}>
+              <div
+                style={{
+                  flexWrap: "wrap",
+                  display: "flex",
+                  justifyContent: "space-around",
+                }}
+              >
+                {filteredData?.map((item) => (
+                  <Product item={item} key={item._id} />
+                ))}
+              </div>
+            </Suspense>
+          </ErrorBoundary>
+          {search === "" ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "1rem",
+              }}
+            >
+              <Stack spacing={2}>
+                <Pagination
+                  sx={{ color: "red" }}
+                  count={forik()}
+                  page={!RouterPage ? pageRef.current : Number(RouterPage)}
+                  onChange={handleAlignment}
+                  defaultPage={1}
+                  color="primary"
+                />
+              </Stack>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div

@@ -1,7 +1,6 @@
 import { Button, Card, TextField } from '@mui/material';
-import React, { FunctionComponent, SetStateAction } from 'react'
-import { ClipLoader } from 'react-spinners';
-import { Dispatch } from 'redux';
+import React, { FunctionComponent, MutableRefObject } from 'react'
+import ClipLoader from 'react-spinners/ClipLoader';
 import { incomingOrders } from '../type'
 
 interface IItemProps {
@@ -12,7 +11,7 @@ interface IItemProps {
     loadingCargo:number;
     changePrep:(active: number) => void;
     changeSentByCargo:(active: number) => void;
-    setTrackNumber:(active: number) => void;
+    TrackRef:MutableRefObject<number>
   }
 
 const Orders: FunctionComponent<IItemProps> = (props) => {
@@ -25,7 +24,7 @@ const Orders: FunctionComponent<IItemProps> = (props) => {
     loadingCargo,
     changePrep,
     changeSentByCargo,
-    setTrackNumber,
+    TrackRef
      } = props;
 
   return (
@@ -79,8 +78,8 @@ const Orders: FunctionComponent<IItemProps> = (props) => {
           <TextField
           defaultValue={data[index].cargotracknumber !== "" ? data[index].cargotracknumber : null}
             onChange={(
-              e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
-            ) => setTrackNumber(+e.target.value)}
+              e: any
+            ) => {TrackRef.current=(+e.target.value)}}
             disabled={data[index].cargotracknumber === "" ? false : true}
             size="small"
             inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}

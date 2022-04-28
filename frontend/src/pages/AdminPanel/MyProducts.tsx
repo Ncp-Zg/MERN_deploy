@@ -1,12 +1,15 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
 import { toast } from "react-toastify";
-import MyProduct from "../../components/MyProduct";
 import { IRootState } from "../../redux/Reducers/rootReducer";
 import { Item } from "../../type";
 import PopupAlert from "../../components/common/PopupAlert";
+import { ErrorBoundary } from "react-error-boundary";
+import ErrorFallback from "../../components/common/ErrorBoundary";
+
+const MyProduct = lazy(() => import("../../components/MyProduct"));
 
 const MyProducts = () => {
   const [myProducts, setMyProducts] = useState<Item[] | null>(null);
@@ -23,13 +26,10 @@ const MyProducts = () => {
       if (user.id !== "") {
         setLoading(true);
         await axios
-          .get(
-            "/api/users/admin/getmyproducts",
-            {
-              withCredentials: true,
-              signal:abortCont.signal
-            }
-          )
+          .get("/api/users/admin/getmyproducts", {
+            withCredentials: true,
+            signal: abortCont.signal,
+          })
           .then((res) => {
             setMyProducts(res.data.myproduct);
             setLoading(true);
@@ -50,39 +50,58 @@ const MyProducts = () => {
     return () => abortCont.abort();
   }, [user.id]);
   return (
-    <div
-      style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}
-    >
-      {myProducts ? (
-        myProducts?.map((prdct) => <MyProduct key={prdct._id} item={prdct} />)
-      ) : loading ? (
+    <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {}}>
+      <Suspense fallback={<div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "80vh",
+              }}
+            >
+              <ClimbingBoxLoader size={30} color="#c67c03" />
+            </div>}>
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "center",
-            alignItems: "center",
-            height: "80vh",
           }}
         >
-          <ClimbingBoxLoader size={30} color="#c67c03" />
+          {myProducts ? (
+            myProducts?.map((prdct) => (
+              <MyProduct key={prdct._id} item={prdct} />
+            ))
+          ) : loading ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "80vh",
+              }}
+            >
+              <ClimbingBoxLoader size={30} color="#c67c03" />
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "70vh",
+              }}
+            >
+              <PopupAlert
+                open={open}
+                handleClose={handleClose}
+                handleOpen={handleOpen}
+              />
+            </div>
+          )}
         </div>
-      ) : (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "70vh",
-          }}
-        >
-          <PopupAlert
-            open={open}
-            handleClose={handleClose}
-            handleOpen={handleOpen}
-          />
-        </div>
-      )}
-    </div>
+      </Suspense>
+    </ErrorBoundary>
   );
 };
 
